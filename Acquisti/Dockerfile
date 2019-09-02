@@ -22,4 +22,4 @@ RUN chown ${USER}:${USER_GROUP} /home/${USER}/app
 COPY --from=mvn --chown=purchase:purchase ${FOLDER}/${APP} /home/${USER}/app/purchase.jar
 
 USER purchase
-CMD ["java", "-XX:MaxRAMPercentage=50", "-jar", "purchase.jar"]
+CMD ["java", "-XX:MaxRAMPercentage=50", "-jar", "purchase.jar"] 
