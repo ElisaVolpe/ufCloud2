@@ -1,0 +1,132 @@
+docker run --rm -it ubuntu:18.04 bash
+uname -r
+
+DOCKER_MACHINE
+C:\Program Files\Docker Toolbox\docker-machine.exe
+
+DOCKER_TOOLBOX_INSTALL_PATH
+C:\Program Files\Docker Toolbox
+
+*****************************************************************
+****************	CREAZIONE IMMAGINE DOCKER 	*****************
+*****************************************************************
+all'interdo della cartella del progetto creiamo un file 
+Dockerfile
+
+FROM openjdk
+
+WORKDIR /app
+ADD . /app
+
+RUN ./mvnw package -Dmaven.test.skip=true
+
+CMD ./mvnw spring.boot:run
+-----------------------------------------------------------------
+Nella directory dove � situato il file docker che contiene le cose
+scritte prima
+
+docker build -t catalog:java . 			-> catalog:java significa che l'immagine avr� nome catalog con tag java
+
+-----------------------------------------------------------------
+FROM openjdk:alpine
+
+WORKDIR /app
+ADD . /app
+
+RUN ./mvnw package -Dmaven.test.skip=true
+
+CMD ./mvnw spring.boot:run
+
+docker build -t catalog:alpine .
+
+-----------------------------------------------------------------
+FROM maven as build
+COPY . /app
+WORKDIR /app
+RUN mvn clean install
+
+FROM openjdk:alpine
+
+WORKDIR /app
+
+COPY --from=build /app/target/catalog-0.0.1-SHNAPSHOT.jar /app/target/catalog-0.0.1-SHNAPSHOT.jar
+
+CMD java -jar catalog-0.0.1-SNAPSHOT.jar
+
+docker build -t catalog:build .
+
+-----------------------------------------------------------------
+FROM maven as build
+COPY . /app
+WORKDIR /app
+RUN mvn clean install -DskipTests
+
+FROM openjdk:alpine as run
+
+#per usare un utente che abbiamo creato noi in questo file
+ARG USER=catalog
+ARG USER_ID=805
+ARG USER_GROUP=catalog
+ARG USER_GROUP_ID=805
+ARG USER_HOME=/home/${USER}
+
+RUN addgroup -g ${USER_GROUP_ID} ${USER_GROUP}; adduser -u ${USER_ID} -D -g '' -h ${USER_HOME} -G ${USER_GROUP} ${USER};
+
+WORKDIR /app
+COPY --chown=catalog:catalog --from=build /app/target/catalog-0.0.1-SNAPSHOT.jar /app/target/catalog-0.0.1-SNAPSHOT.jar
+
+EXPOSE 8080
+
+USER catalog
+
+CMD java -Xms512m -Xmx1024m -jar catalog-0.0.1-SNAPSHOT.jar
+#-Xms512m -Xmx1024m
+# serve per definire la memoria massima che pu� utilizzare un container, se ne usa di pi� lo killa
+
+#per limitare l'usodella ram da comando
+docker run -m 1g catalog:multi_stage 
+
+-----------------------------------------------------------------
+docker run --network altraformazione --memory 256m --name catalog -p 18080:8080 -e ... -e... -e ... -d catalog
+
+> --memory sta a significare quanta Ram usa il container
+> -d fa partire il container in background
+> --name � il nome del catalogo
+> -p sono le porte 18080:8080 la prima � la mia del pc, la seconda � quella del container
+> -e sono dei parametri per delle variabili che diamo da comando per non fare il buil dell'immagine ogni volta
+
+-----------------------------------------------------------------
+creare i container per ogni progetto, inserendo il dockerfile per ognuno
+- purchase
+- catalog
+- proxy
+- registry
+- hystrix
+
+creare una network chiamata altaformazione
+
+fare il build 
+ docker build 
+
+fare la run
+ docker run 
+
+docker build -f Dockerfile-experimental -t registry .
+docker run --network altaformazione --name zipkin -p 9411:9411 -d openzipkin/zipkin
+docker run --network altaformazione --name mongo -d mongo:latest
+docker run --memory 256m --network altaformazione -p 8761:8761 --name registry -d registry
+docker run --network altaformazione --memory 256m --name catalog -p 18080:8080 -e "MONGO_URL=mongo" -e "ZIPKIN_URL=http://zipkin:9411" -e "EUREKA_URL=http://registry:8761/eureka" -d catalog
+docker run --network altaformazione --memory 256m --name purchase -p 28080:8080 -e "MONGO_URL=mongo" -e "ZIPKIN_URL=http://zipkin:9411" -e "EUREKA_URL=http://registry:8761/eureka" -d purchase
+docker run --network altaformazione --memory 256m --name zuul-proxy -p 5000:5000 -e "ZIPKIN_URL=http://zipkin:9411" -e "EUREKA_URL=http://registry:8761/eureka" -d zuul-proxy
+
+-----------------------------------------------------------------
+docker compose app -d
+
+si commenta la parte di deploy del docker-compose
+lanciando questo comando si evita di fare run di ogni container
+
+-----------------------------------------------------------------
+docker swarm init 
+
+cluster che ti permette di collegare insieme i container
+
