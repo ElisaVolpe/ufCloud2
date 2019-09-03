@@ -130,3 +130,4 @@ docker swarm init
 
 cluster che ti permette di collegare insieme i container
 
+//PROVA DA VM
