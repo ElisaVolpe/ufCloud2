@@ -1,0 +1,10 @@
+Deploynment --> gestire il metodo di rilascio del applicazione
+StatfulSet --> ha sempre lo stesso nome e lo stesso volume, avendo sempre lo stesso ip, utile per deployare database all'interno dei cluste. I dati così si ritrovano anche dopo il restart
+deamon set --> il container definito viene eseguito all'interno dello stesso nodo. Si assicura che ogni volta che si aggiunge un nodo al clusater aggiunge e fa eseguire i pod
+Job
+Ingress
+persistent volume --> volumi che sia valido anche se il pod viene stoppato.
+
+Metadata: --> descrivere oggetti ed etichettarli
+annotation --> usate per aggiungere comandi all'interno dell'ingress
+labels --> differenziare oggetti all'interno del cluster
